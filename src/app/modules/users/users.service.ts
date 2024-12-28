@@ -76,4 +76,8 @@ export class UsersService {
   async findOne(id: string) {
     return this.userRepository.findOneBy({ id });
   }
+
+  async findOneByUsername(username: string) {
+    return this.userRepository.findOneBy({ username });
+  }
 }

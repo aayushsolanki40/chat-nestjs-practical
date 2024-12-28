@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsUUID } from 'class-validator';
+import { IsNotEmpty, IsString, IsUUID } from 'class-validator';
 
 export class InviteMemberDto {
   @IsNotEmpty()
@@ -6,6 +6,6 @@ export class InviteMemberDto {
   groupId: string;
 
   @IsNotEmpty()
-  @IsUUID()
-  userId: string;
+  @IsString()
+  username: string;
 }

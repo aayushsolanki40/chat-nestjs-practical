@@ -14,7 +14,11 @@ import { CreateChatGroupDto } from './dto/create-chat-group.dto';
 import { InviteMemberDto } from './dto/invite-member.dto';
 import { Request, Response } from 'express';
 import { JwtCookieGuard } from '@/shared/guards/jwt-cookies.guard';
-import { successDataResponse } from '@/shared/common/response.common';
+import {
+  successDataResponse,
+  successResponse,
+} from '@/shared/common/response.common';
+import { CHAT_STRING } from '@/constant/string.config';
 
 @Controller('chat')
 @UseGuards(JwtCookieGuard)
@@ -36,16 +40,38 @@ export class ChatController {
     return successDataResponse(res, 'Group fetched', data);
   }
 
+  @Get('group/:groupId/members')
+  async findAllGroupsMembers(
+    @Param('groupId') groupId: string,
+    @Res() res: Response,
+  ) {
+    const data = await this.chatService.findAllGroupsMembers(groupId);
+    return successDataResponse(
+      res,
+      CHAT_STRING.SUCCESS.GROUP_MEMBER_FETCHED,
+      data,
+    );
+  }
+
   @Post('group/invite')
-  inviteMember(@Body() inviteMemberDto: InviteMemberDto) {
-    return this.chatService.inviteMember(inviteMemberDto);
+  async inviteMember(
+    @Body() inviteMemberDto: InviteMemberDto,
+    @Res() res: Response,
+  ) {
+    await this.chatService.inviteMember(inviteMemberDto);
+    return successResponse(
+      res,
+      CHAT_STRING.SUCCESS.MEMBER_HAS_BEEN_ADDED_IN_CHAT,
+    );
   }
 
   @Delete('group/:groupId/member/:userId')
-  removeMember(
+  async removeMember(
     @Param('groupId') groupId: string,
     @Param('userId') userId: string,
+    @Res() res: Response,
   ) {
-    return this.chatService.removeMember(groupId, userId);
+    await this.chatService.removeMember(groupId, userId);
+    return successResponse(res, CHAT_STRING.SUCCESS.INVITED_MEMBER_REMOVED);
   }
 }
