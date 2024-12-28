@@ -1,4 +1,5 @@
-import { AUTH_STRING } from '@/constant/string.config';
+import { User } from '@/app/modules/users/entities/user.entity';
+import { AUTH_STRING, COMMON_ERROR } from '@/constant/string.config';
 import {
   Injectable,
   CanActivate,
@@ -11,7 +12,7 @@ import { JwtService } from '@nestjs/jwt';
 export class JwtCookieGuard implements CanActivate {
   constructor(private readonly jwtService: JwtService) {}
 
-  canActivate(context: ExecutionContext): boolean {
+  async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest();
     const token = request.cookies['jwt'];
 
@@ -21,10 +22,15 @@ export class JwtCookieGuard implements CanActivate {
 
     try {
       const payload = this.jwtService.verify(token);
-      request.user = payload; // Attach user info to request object
+      const userId = payload.sub;
+      const user = await User.findOneBy({ id: userId });
+      if (!user) {
+        throw new UnauthorizedException(COMMON_ERROR.NOT_AUTHENTICATED);
+      }
+      request.user = user;
       return true;
     } catch (error) {
-      throw new UnauthorizedException(AUTH_STRING.ERROR.INVALID_TOKEN);
+      throw new UnauthorizedException(COMMON_ERROR.NOT_AUTHENTICATED);
     }
   }
 }

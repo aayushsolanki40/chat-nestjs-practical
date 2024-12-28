@@ -10,3 +10,7 @@ export const AUTH_STRING = {
     INVALID_TOKEN: 'Invalid Token',
   },
 };
+
+export const COMMON_ERROR = {
+  NOT_AUTHENTICATED: 'Not Authenticated',
+};

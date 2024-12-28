@@ -72,4 +72,8 @@ export class UsersService {
 
     return successResponse(response, AUTH_STRING.SUCCESS.LOGIN_SUCCESS);
   }
+
+  async findOne(id: string) {
+    return this.userRepository.findOneBy({ id });
+  }
 }
