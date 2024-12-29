@@ -21,7 +21,7 @@ export const CHAT_STRING = {
     GROUP_NAME_EXISTS: 'Group with this name is already exists',
     CHAT_NOT_FOUND: 'Chat group not found',
     USER_ALREADY_MEMBER: 'User already a member of the group',
-    USER_NOT_FOUND: 'User not found',
+    USER_NOT_FOUND: 'User not found with this username.',
     MEMBER_NOT_FOUND: 'Member not found',
     CREATOR_NOT_FOUND: 'Creator not found',
   },
