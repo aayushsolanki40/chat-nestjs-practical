@@ -26,17 +26,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   async handleConnection(client: Socket): Promise<void> {
     try {
-      const cookies = cookie.parse(client.handshake.headers.cookie || '');
-      const jwt = cookies.jwt;
-
-      if (!jwt) {
-        client.disconnect();
-        console.error('Authorization failed.');
-        return;
-      }
-
-      const decoded = this.jwtService.verify(jwt);
-      const userId = decoded.sub;
+      const userId = this.getAuthUserId(client);
       const user = await this.userService.findOne(userId);
       if (!user) {
         console.error('User not found. Disconnecting client.');
@@ -92,6 +82,16 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @MessageBody() data: { room: string; message: string },
     @ConnectedSocket() client: Socket,
   ): void {
+    const userId = this.getAuthUserId(client);
+
+    const { room, message } = data;
+
+    // Broadcast the message to the specified room
+    this.server.to(room).emit('new-message', { message, userId, roomId: room });
+    console.log(`Message from in room ${room}: ${message}`);
+  }
+
+  getAuthUserId(@ConnectedSocket() client: Socket) {
     const cookies = cookie.parse(client.handshake.headers.cookie || '');
     const jwt = cookies.jwt;
 
@@ -102,12 +102,6 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
 
     const decoded = this.jwtService.verify(jwt);
-    const userId = decoded.sub;
-
-    const { room, message } = data;
-
-    // Broadcast the message to the specified room
-    this.server.to(room).emit('new-message', { message, userId });
-    console.log(`Message from in room ${room}: ${message}`);
+    return decoded.sub;
   }
 }
