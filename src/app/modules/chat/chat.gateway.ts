@@ -12,7 +12,9 @@ import * as cookie from 'cookie';
 import { JwtService } from '@nestjs/jwt';
 import { UsersService } from '../users/users.service';
 
-@WebSocketGateway({ cors: { origin: '*' } })
+@WebSocketGateway({
+  cors: { origin: ['http://localhost:3000'], credentials: true },
+})
 export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer()
   server: Server;
@@ -26,13 +28,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   async handleConnection(client: Socket): Promise<void> {
     try {
-      const userId = this.getAuthUserId(client);
-      const user = await this.userService.findOne(userId);
-      if (!user) {
-        console.error('User not found. Disconnecting client.');
-        client.disconnect();
-        return;
-      }
+      const user = await this.getAuthUserId(client);
 
       this.connectedUsers[client.id] = user.id;
       console.log(`Client connected: ${client.id}, User Id: ${user.id}`);
@@ -67,31 +63,29 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   // Leave a specific room
   @SubscribeMessage('leave-room')
   handleLeaveRoom(
-    @MessageBody() data: { room: string; username: string },
+    @MessageBody() roomId: string,
     @ConnectedSocket() client: Socket,
   ): void {
-    const { room, username } = data;
-    client.leave(room);
-
-    this.server.to(room).emit('user-left', `${username} has left the room.`);
-    console.log(`${username} left room: ${room}`);
+    client.leave(roomId);
   }
 
   @SubscribeMessage('message')
-  handleMessage(
+  async handleMessage(
     @MessageBody() data: { room: string; message: string },
     @ConnectedSocket() client: Socket,
-  ): void {
-    const userId = this.getAuthUserId(client);
+  ): Promise<void> {
+    const user = await this.getAuthUserId(client);
 
     const { room, message } = data;
 
     // Broadcast the message to the specified room
-    this.server.to(room).emit('new-message', { message, userId, roomId: room });
+    this.server
+      .to(room)
+      .emit('new-message', { message, userId: user.id, roomId: room });
     console.log(`Message from in room ${room}: ${message}`);
   }
 
-  getAuthUserId(@ConnectedSocket() client: Socket) {
+  async getAuthUserId(@ConnectedSocket() client: Socket) {
     const cookies = cookie.parse(client.handshake.headers.cookie || '');
     const jwt = cookies.jwt;
 
@@ -102,6 +96,15 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
 
     const decoded = this.jwtService.verify(jwt);
-    return decoded.sub;
+    const userId = decoded.sub;
+
+    const user = await this.userService.findOne(userId);
+    if (!user) {
+      console.error('User not found. Disconnecting client.');
+      client.disconnect();
+      return;
+    }
+
+    return user;
   }
 }

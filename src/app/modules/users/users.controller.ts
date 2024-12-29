@@ -10,9 +10,12 @@ import {
 import { UsersService } from './users.service';
 import { SignupDto } from './dto/signup.dto';
 import { LoginDto } from './dto/login.dto';
-import { Response } from 'express';
 import { JwtCookieGuard } from '@/shared/guards/jwt-cookies.guard';
-import { successResponse } from '@/shared/common/response.common';
+import {
+  successDataResponse,
+  successResponse,
+} from '@/shared/common/response.common';
+import { Request, Response } from 'express';
 
 @Controller('users')
 export class UsersController {
@@ -31,7 +34,7 @@ export class UsersController {
 
   @UseGuards(JwtCookieGuard)
   @Get('me')
-  getProfile(@Req() req) {
-    return req.user; // Returns user info from the JWT payload
+  getProfile(@Req() req: Request, @Res() response: Response) {
+    return successDataResponse(response, 'User information fetched.', req.user); // Returns user info from the JWT payload
   }
 }
