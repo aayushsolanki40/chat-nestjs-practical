@@ -30,7 +30,7 @@ export class UsersController {
   }
 
   @UseGuards(JwtCookieGuard)
-  @Get('profile')
+  @Get('me')
   getProfile(@Req() req) {
     return req.user; // Returns user info from the JWT payload
   }

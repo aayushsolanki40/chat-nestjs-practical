@@ -50,8 +50,16 @@ export class ChatService {
     return instanceToPlain(result) as ChatGroup;
   }
 
-  async findAllGroups(): Promise<ChatGroup[]> {
-    return instanceToPlain(this.chatGroupRepository.find()) as Array<ChatGroup>;
+  async findAllGroups(userId: string): Promise<ChatGroup[]> {
+    return instanceToPlain(
+      this.chatGroupRepository
+        .createQueryBuilder('group')
+        .leftJoinAndSelect('group.creator', 'creator')
+        .leftJoinAndSelect('group.members', 'members')
+        .where('creator.id = :userId', { userId })
+        .orWhere('members."userId" = :userId', { userId })
+        .getMany(),
+    ) as Array<ChatGroup>;
   }
 
   async findAllGroupsMembers(groupId: string): Promise<GroupMember[]> {

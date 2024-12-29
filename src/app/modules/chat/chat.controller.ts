@@ -35,8 +35,8 @@ export class ChatController {
   }
 
   @Get('groups')
-  async findAllGroups(@Res() res: Response) {
-    const data = await this.chatService.findAllGroups();
+  async findAllGroups(@Req() request: Request, @Res() res: Response) {
+    const data = await this.chatService.findAllGroups(request.user.id);
     return successDataResponse(res, 'Group fetched', data);
   }
 
