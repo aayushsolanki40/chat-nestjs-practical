@@ -79,9 +79,12 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     const { room, message } = data;
 
     // Broadcast the message to the specified room
-    this.server
-      .to(room)
-      .emit('new-message', { message, userId: user.id, roomId: room });
+    this.server.to(room).emit('new-message', {
+      message,
+      userId: user.id,
+      roomId: room,
+      username: user.username,
+    });
     console.log(`Message from in room ${room}: ${message}`);
   }
 
