@@ -11,18 +11,40 @@ import { Server, Socket } from 'socket.io';
 import * as cookie from 'cookie';
 import { JwtService } from '@nestjs/jwt';
 import { UsersService } from '../users/users.service';
+import { OpenAI } from 'openai';
+import { createClient } from '@redis/client';
+import { createAdapter } from '@socket.io/redis-adapter';
 
 @WebSocketGateway({
   cors: { origin: ['http://localhost:3000'], credentials: true },
+  transports: ['websocket'],
 })
 export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer()
   server: Server;
 
+  private openai: OpenAI;
+
   constructor(
     private jwtService: JwtService,
     private userService: UsersService,
-  ) {}
+  ) {
+    this.openai = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
+    });
+
+    const pubClient = createClient({ url: 'redis://localhost:6379' });
+    const subClient = pubClient.duplicate();
+
+    Promise.all([pubClient.connect(), subClient.connect()])
+      .then(() => {
+        this.server.adapter(createAdapter(pubClient, subClient));
+        console.log('Redis adapter connected');
+      })
+      .catch((error) => {
+        console.error('Redis connection failed:', error);
+      });
+  }
 
   private connectedUsers: Record<string, string> = {};
 
@@ -50,14 +72,9 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @MessageBody() data: { room: string; username: string },
     @ConnectedSocket() client: Socket,
   ): void {
-    const { room, username } = data;
+    const { room } = data;
     client.join(room);
-    this.connectedUsers[client.id] = username;
-
-    this.server
-      .to(room)
-      .emit('user-joined', `${username} has joined the room.`);
-    console.log(`${username} joined room: ${room}`);
+    this.server.to(room).emit('user-joined', `a user has joined the room.`);
   }
 
   // Leave a specific room
